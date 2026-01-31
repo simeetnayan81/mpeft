@@ -1,0 +1,6 @@
+cmake ..
+make -j$(sysctl -n hw.ncpu)
+./mpeft
+
+To Create a dummy file if it doesn't exist for a quick test
+In terminal: head -c 1024 /dev/urandom > test_weights.bin
