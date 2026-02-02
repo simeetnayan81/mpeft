@@ -1,3 +1,4 @@
+git submodule update --init --recursive
 cmake ..
 make -j$(sysctl -n hw.ncpu)
 ./mpeft

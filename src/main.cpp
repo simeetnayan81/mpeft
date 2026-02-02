@@ -1,22 +1,31 @@
 #include "MemoryMap.hpp"
+#include "GGUFReader.hpp"
 #include "Tensor.hpp"
 #include <iostream>
+#include <type_traits>
 
-int main() {
+
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        std::cout << "Usage: ./mpeft <model.gguf>\n";
+        return 1;
+    }
+
     try {
-        
-        MemoryMap model("weights.bin");
-        std::cout << "Successfully mapped " << model.size() << " bytes.\n";
+        MemoryMap model_file(argv[1]);
+        GGUFReader reader(model_file.data(), model_file.size());
+        reader.parse();
 
-        // Wrap the first 16 bytes (4 floats) as a 2x2 matrix
-        float* raw_ptr = static_cast<float*>(model.data());
-        std::span<float> weight_view(raw_ptr, 4);
-        
-        Tensor weight_matrix(weight_view, {2, 2});
-        weight_matrix.print("Initial Weights");
+        std::cout << "Successfully parsed model: " << argv[1] << "\n";
+        std::cout << "Found " << reader.tensors().size() << " tensors.\n";
+        reader.print_metadata();
+
+        for (size_t i = 0; i < reader.tensors().size(); ++i) {
+            std::cout << " - " << reader.tensors()[i].name << "\n";
+        }
 
     } catch (const std::exception& e) {
-        std::cerr << "CRITICAL ERROR: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << "\n";
         return 1;
     }
     return 0;
