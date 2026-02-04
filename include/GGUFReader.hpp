@@ -37,11 +37,14 @@ public:
     const std::map<std::string, GGUFMetadataValue>& metadata() const { return metadata_; }
     const std::vector<GGUFTensorInfo>& tensors() const { return tensor_infos_; }
     void print_metadata() const;
+    size_t data_offset() const { return data_offset_; }
 
 private:
     const uint8_t* data_ptr_;
     size_t total_size_;
     size_t cursor_ = 0;
+    size_t data_offset_ = 0;
+    const size_t ALIGNMENT = 32;
 
     std::map<std::string, GGUFMetadataValue> metadata_;
     std::vector<GGUFTensorInfo> tensor_infos_;

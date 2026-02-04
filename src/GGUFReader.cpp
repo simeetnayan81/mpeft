@@ -36,6 +36,9 @@ void GGUFReader::parse() {
 
     parse_kv_pairs(kv_count);
     parse_tensor_infos(tensor_count);
+    data_offset_ = (cursor_ + ALIGNMENT - 1) & ~(ALIGNMENT - 1);
+    
+    std::cout << "DEBUG: Tensor Data starts at file offset: " << data_offset_ << "\n";
 }
 
 // Helper to determine the byte-width of basic GGUF types
