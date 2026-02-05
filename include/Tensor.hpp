@@ -25,6 +25,7 @@ public:
     static std::vector<size_t> computeDefaultStrides(const std::vector<size_t>& shape);
 
 private:
+    Tensor(std::span<float> data, std::vector<size_t> shape, std::vector<size_t> strides);
     std::span<float> data_;
     std::vector<size_t> shape_;
     std::vector<size_t> strides_;

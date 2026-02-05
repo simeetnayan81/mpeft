@@ -4,7 +4,10 @@
 #include <numeric>
 
 Tensor::Tensor(std::span<float> data, std::vector<size_t> shape)
-    : data_(data), shape_(shape), strides_(computeDefaultStrides(shape)) {}
+    : data_(data), shape_(std::move(shape)), strides_(computeDefaultStrides(shape_)) {}
+
+Tensor::Tensor(std::span<float> data, std::vector<size_t> shape, std::vector<size_t> strides)
+    : data_(data), shape_(std::move(shape)), strides_(std::move(strides)) {}
 
 std::vector<size_t> Tensor::computeDefaultStrides(const std::vector<size_t>& shape) {
     std::vector<size_t> strides(shape.size());
@@ -29,10 +32,9 @@ float Tensor::operator()(size_t r, size_t c) const {
 Tensor Tensor::transpose() const {
     if (shape_.size() != 2) throw std::runtime_error("Transpose only supported for 2D");
     
-    Tensor t = *this;
-    std::swap(t.shape_[0], t.shape_[1]);
-    std::swap(t.strides_[0], t.strides_[1]);
-    return t;
+    std::vector<size_t> new_shape = {shape_[1], shape_[0]};
+    std::vector<size_t> new_strides = {strides_[1], strides_[0]};
+    return Tensor(data_, new_shape, new_strides);
 }
 
 Tensor Tensor::reshape(const std::vector<size_t>& new_shape) const {
@@ -40,10 +42,7 @@ Tensor Tensor::reshape(const std::vector<size_t>& new_shape) const {
     size_t new_total = std::accumulate(new_shape.begin(), new_shape.end(), 1, std::multiplies<size_t>());
     if (new_total != data_.size()) throw std::runtime_error("Reshape size mismatch");
 
-    Tensor t = *this;
-    t.shape_ = new_shape;
-    t.strides_ = computeDefaultStrides(new_shape);
-    return t;
+    return Tensor(data_, new_shape);
 }
 
 void Tensor::print(const std::string& name) const {

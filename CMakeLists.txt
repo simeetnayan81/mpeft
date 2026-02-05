@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(mpeft LANGUAGES CXX)
+project(mpeft LANGUAGES CXX C)
 
 # Use C++20 for std::span and other modern features
 set(CMAKE_CXX_STANDARD 20)
@@ -12,7 +12,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(GGML_BUILD_EXAMPLES OFF CACHE BOOL "GGML Examples" FORCE)
 set(GGML_BUILD_TESTS OFF CACHE BOOL "GGML Tests" FORCE)
 set(GGML_METAL          ON  CACHE BOOL "Enable Metal" FORCE)
-
+set(GGML_BACKTRACE_LLDB ON CACHE BOOL "Enable LLDB Backtrace" FORCE)
 # --- External Dependencies ---
 add_subdirectory(external/ggml)
 
@@ -21,32 +21,29 @@ if(APPLE)
     add_compile_options(-O3 -mcpu=native -ffast-math -Wall)
 endif()
 
-# Include directories so we can write #include "Tensor.hpp" instead of #include "../include/Tensor.hpp"
-include_directories(include)
-include_directories(external/ggml/include)
-include_directories(external/ggml/src)
-
-# --- Source Groups ---
-set(SOURCES 
+# --- Core Library (Shared Code) ---
+add_library(mpeft_core STATIC
     src/Tensor.cpp 
     src/MemoryMap.cpp 
-)
-# --- Target 1: The Main Application ---
-add_executable(mpeft 
-    src/main.cpp 
-    ${SOURCES}
+    src/GGUFEngine.cpp
 )
 
-target_link_libraries(mpeft PRIVATE ggml)
+# PUBLIC makes this include path available to consumers of mpeft_core.
+target_include_directories(mpeft_core PUBLIC include)
+
+# Link the core library against its dependencies.
+# PUBLIC propagates these dependencies to any target that links against mpeft_core.
+target_link_libraries(mpeft_core PUBLIC ggml)
 if(APPLE)
-    target_link_libraries(mpeft PRIVATE "-framework Foundation" "-framework Accelerate")
+    target_link_libraries(mpeft_core PUBLIC "-framework Foundation" "-framework Accelerate")
 endif()
 
-# --- Target 2: The Verification Suite ---
-add_executable(tensor_tests 
-    tests/tensor_test.cpp 
-    ${SOURCES}
-)
+# --- Executable Targets ---
+add_executable(mpeft src/main.cpp)
+target_link_libraries(mpeft PRIVATE mpeft_core)
+
+add_executable(tensor_tests tests/tensor_test.cpp)
+target_link_libraries(tensor_tests PRIVATE mpeft_core)
 
 # Provide a helper to run tests via 'ctest' or just 'make test'
 enable_testing()
