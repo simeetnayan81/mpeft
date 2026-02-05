@@ -5,6 +5,16 @@ project(mpeft LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# This will automatically configure GGML for Apple Silicon (Accelerate/Metal)
+set(GGML_BUILD_EXAMPLES OFF CACHE BOOL "GGML Examples" FORCE)
+set(GGML_BUILD_TESTS OFF CACHE BOOL "GGML Tests" FORCE)
+set(GGML_METAL          ON  CACHE BOOL "Enable Metal" FORCE)
+
+# --- External Dependencies ---
+add_subdirectory(external/ggml)
 
 # --- Hardware Optimization ---
 if(APPLE)
@@ -13,11 +23,13 @@ endif()
 
 # Include directories so we can write #include "Tensor.hpp" instead of #include "../include/Tensor.hpp"
 include_directories(include)
+include_directories(external/ggml/include)
+include_directories(external/ggml/src)
+
 # --- Source Groups ---
 set(SOURCES 
     src/Tensor.cpp 
     src/MemoryMap.cpp 
-    src/GGUFReader.cpp
 )
 # --- Target 1: The Main Application ---
 add_executable(mpeft 
@@ -25,6 +37,7 @@ add_executable(mpeft
     ${SOURCES}
 )
 
+target_link_libraries(mpeft PRIVATE ggml)
 if(APPLE)
     target_link_libraries(mpeft PRIVATE "-framework Foundation" "-framework Accelerate")
 endif()
